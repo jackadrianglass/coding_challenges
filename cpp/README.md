@@ -54,3 +54,9 @@ auto std::variant<int64_t, double> ret = map(
     std::variant<int, float>{2U}
 );
 ```
+
+## Notepad
+
+I need to get the resulting type of the visitor pattern mapped into the variant
+type. Since `std::visit` requires that all return types be the same, I can't use
+that.

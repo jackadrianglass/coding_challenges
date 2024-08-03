@@ -4,6 +4,6 @@ project('cpp_challenges', 'cpp',
 
 ut_dep = dependency('boost-ext-ut')
 
-exe = executable('app', 'q1.cc', dependencies: ut_dep)
+exe = executable('app', 'main.cc', dependencies: ut_dep)
 
 test('basic', exe)
