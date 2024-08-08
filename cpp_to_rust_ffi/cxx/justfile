@@ -1,0 +1,9 @@
+setup:
+	conan install . --output-folder=build --build=missing
+	cd build; meson setup --native-file conan_meson_native.ini . ..
+
+build:
+	cd build; ninja
+
+run:
+	./build/app

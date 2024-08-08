@@ -1,12 +1,12 @@
-
 Q4)
 Description: Implement a generic directed tree data structure in Rust that supports storing and
 mutating arbitrary data at the nodes and on the edges. This challenge will involve defining traits
 with associated types, implementing these traits for different graph types, and using Rust's
 generics to create a flexible and reusable data structure.
-Skills: Generics, associated types, traits, Rust's type system.
-Steps:
 
+Skills: Generics, associated types, traits, Rust's type system.
+
+Steps:
 1. Define the Graph Trait:
    ○ Create a trait for graph operations with associated types for nodes and edges.
 1. Implement the Trait for Different Graph Types:
