@@ -1,6 +1,0 @@
-[requires]
-boost-ext-ut/2.0.1
-
-[generators]
-PkgConfigDeps
-MesonToolchain
