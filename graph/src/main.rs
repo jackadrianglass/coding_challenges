@@ -4,12 +4,18 @@ use std::collections::HashMap;
 type VertexHandle = usize;
 type EdgeHandle = (usize, usize);
 
-trait Graph<Vertex, Edge> {
+trait Graph<'a, Vertex: 'a, Edge: 'a> {
     fn new() -> Self;
 
     fn num_vertices(&self) -> usize;
     fn vertex(&self, handle: VertexHandle) -> Option<&Vertex>;
     fn add_vertex(&mut self, data: Vertex) -> VertexHandle;
+    fn add_connected_vertex(
+        &mut self,
+        vertex_data: Vertex,
+        connecting_vertex: VertexHandle,
+        edge_data: Edge,
+    ) -> Option<(VertexHandle, EdgeHandle)>;
     fn remove_vertex(&mut self, handle: VertexHandle) -> Option<Vertex>;
     fn update_vertex(&mut self, handle: VertexHandle, data: Vertex);
 
@@ -23,6 +29,73 @@ trait Graph<Vertex, Edge> {
     ) -> Option<EdgeHandle>;
     fn remove_edge(&mut self, handle: EdgeHandle) -> Option<Edge>;
     fn update_edge(&mut self, handle: EdgeHandle, data: Edge);
+    // todo: bring this back once you figure out the lifetime stuff
+    // fn traverse<T>(
+    //     &self,
+    //     start: VertexHandle,
+    //     edge_callback: T,
+    // ) -> impl Iterator<Item = (&VertexHandle, &'a Vertex)>
+    // where
+    //     T: Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle>;
+}
+
+struct UndirectedGraphIter<'a, Vertex, Edge> {
+    graph: &'a UndirectedGraph<Vertex, Edge>,
+    start: VertexHandle,
+    edge_callback: Box<dyn Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle> + 'a>,
+
+    current: Option<VertexHandle>,
+}
+
+impl<'a, Vertex, Edge> UndirectedGraphIter<'a, Vertex, Edge> {
+    fn new(
+        graph: &'a UndirectedGraph<Vertex, Edge>,
+        start: VertexHandle,
+        edge_callback: Box<dyn Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle>>,
+    ) -> Self {
+        Self {
+            graph,
+            start,
+            edge_callback,
+            current: None,
+        }
+    }
+}
+
+impl<'a, Vertex, Edge> Iterator for UndirectedGraphIter<'a, Vertex, Edge>
+where
+    Vertex: Clone,
+{
+    type Item = (VertexHandle, Vertex);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Some(current) = self.current else {
+            self.current = Some(self.start);
+
+            if let Some(data) = self.graph.vertex(self.start) {
+                return Some((self.start.clone(), data.clone()));
+            } else {
+                return None;
+            };
+        };
+
+        if self.graph.vertex(current).is_none() {
+            return None;
+        }
+        let edges = self.graph.connections(current);
+        if edges.len() == 0 {
+            return None;
+        }
+        let Some(edge) = (self.edge_callback)(&edges) else {
+            return None;
+        };
+        self.current = Some(if edge.0 == current { edge.1 } else { edge.0 });
+        if let Some(data) = self.graph.vertex(self.current.unwrap()) {
+            Some((self.current.unwrap().clone(), data.clone()))
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -32,7 +105,7 @@ struct UndirectedGraph<Vertex, Edge> {
     vertex_counter: VertexHandle,
 }
 
-impl<Vertex, Edge> Graph<Vertex, Edge> for UndirectedGraph<Vertex, Edge> {
+impl<'a, Vertex: 'a, Edge: 'a> Graph<'a, Vertex, Edge> for UndirectedGraph<Vertex, Edge> {
     fn new() -> Self {
         Self {
             vertices: HashMap::new(),
@@ -56,6 +129,23 @@ impl<Vertex, Edge> Graph<Vertex, Edge> for UndirectedGraph<Vertex, Edge> {
         self.vertices.insert(id, data);
 
         id
+    }
+
+    fn add_connected_vertex(
+        &mut self,
+        vertex_data: Vertex,
+        connecting_vertex: VertexHandle,
+        edge_data: Edge,
+    ) -> Option<(VertexHandle, EdgeHandle)> {
+        let handle = self.add_vertex(vertex_data);
+        let edge_handle = self.add_edge(connecting_vertex, handle, edge_data);
+        match edge_handle {
+            Some(edge_handle) => Some((handle, edge_handle)),
+            None => {
+                self.remove_vertex(handle);
+                None
+            }
+        }
     }
 
     fn remove_vertex(&mut self, handle: VertexHandle) -> Option<Vertex> {
@@ -94,10 +184,13 @@ impl<Vertex, Edge> Graph<Vertex, Edge> for UndirectedGraph<Vertex, Edge> {
         second: VertexHandle,
         data: Edge,
     ) -> Option<EdgeHandle> {
-        if !self.vertices.contains_key(&first) || !self.vertices.contains_key(&second) {
+        if !(self.vertices.contains_key(&first) && self.vertices.contains_key(&second)) {
             return None;
         }
         let handle = (first, second);
+        if self.edges.contains_key(&handle) || self.edges.contains_key(&(second, first)) {
+            return None;
+        }
         self.edges.insert(handle, data);
         Some(handle)
     }
@@ -112,15 +205,25 @@ impl<Vertex, Edge> Graph<Vertex, Edge> for UndirectedGraph<Vertex, Edge> {
             None => {}
         }
     }
-
 }
 
-impl<Vertex, Edge> UndirectedGraph<Vertex, Edge> {
+impl<Vertex, Edge> UndirectedGraph<Vertex, Edge>
+where
+    Vertex: Clone,
+{
     fn connections(&self, handle: VertexHandle) -> Vec<(&EdgeHandle, &Edge)> {
         self.edges
             .iter()
             .filter(|&((a, b), _)| *a == handle || *b == handle)
             .collect()
+    }
+
+    fn traverse<'b>(
+        &'b self,
+        start: VertexHandle,
+        edge_callback: Box<dyn Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle>>,
+    ) -> impl Iterator<Item = (VertexHandle, Vertex)> + 'b {
+        UndirectedGraphIter::new(&self, start, edge_callback)
     }
 }
 
@@ -244,6 +347,16 @@ mod tests {
         }
 
         #[test]
+        fn can_add_connected_vertex() {
+            let mut graph: UndirectedGraph<i32, i32> = UndirectedGraph::new();
+            let a = graph.add_vertex(1);
+            let b = graph.add_connected_vertex(2, a, 123);
+            assert!(b.is_some());
+            assert_eq!(graph.num_vertices(), 2);
+            assert_eq!(graph.num_edges(), 1);
+        }
+
+        #[test]
         fn can_get_all_connections_to_the_vertex() {
             let mut graph: UndirectedGraph<i32, i32> = UndirectedGraph::new();
 
@@ -260,15 +373,42 @@ mod tests {
             assert_eq!(graph.num_edges(), 4);
             let connections = graph.connections(a);
             assert_eq!(connections.len(), 4);
-            let connections = connections.iter().map(|&(key, _)| key.clone()).collect::<Vec<_>>();
+            let connections = connections
+                .iter()
+                .map(|&(key, _)| key.clone())
+                .collect::<Vec<_>>();
             assert!(connections.contains(&handle_1.unwrap()));
             assert!(connections.contains(&handle_2.unwrap()));
             assert!(connections.contains(&handle_3.unwrap()));
             assert!(connections.contains(&handle_4.unwrap()));
         }
 
+        #[test]
+        fn can_traverse_the_graph() {
+            let mut graph: UndirectedGraph<i32, i32> = UndirectedGraph::new();
+            let a = graph.add_vertex(1);
+            let (b, _) = graph.add_connected_vertex(2, a, 11).unwrap();
+            let (c, _) = graph.add_connected_vertex(3, b, 12).unwrap();
+            let (d, _) = graph.add_connected_vertex(4, c, 13).unwrap();
+            let (e, _) = graph.add_connected_vertex(5, d, 14).unwrap();
+            let (f, _) = graph.add_connected_vertex(6, e, 15).unwrap();
+
+            for ((lhs, _), rhs) in graph
+                .traverse(
+                    a,
+                    Box::new(|edges: &[(&EdgeHandle, &i32)]|{
+                        let mut sorted = edges.iter().map(|(handle, _)| handle).collect::<Vec<_>>();
+                        sorted.sort();
+                        Some(***sorted.iter().rev().next().unwrap())
+                    }),
+                )
+                .zip([a, b, c, d, e, f].iter())
+            {
+                assert_eq!(lhs, *rhs);
+            }
+        }
+
         // todo
-        // - iterator through the graph
         // - some algorithm on the graph
     }
 
