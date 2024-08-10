@@ -29,14 +29,6 @@ trait Graph<'a, Vertex: 'a, Edge: 'a> {
     ) -> Option<EdgeHandle>;
     fn remove_edge(&mut self, handle: EdgeHandle) -> Option<Edge>;
     fn update_edge(&mut self, handle: EdgeHandle, data: Edge);
-    // todo: bring this back once you figure out the lifetime stuff
-    // fn traverse<T>(
-    //     &self,
-    //     start: VertexHandle,
-    //     edge_callback: T,
-    // ) -> impl Iterator<Item = (&VertexHandle, &'a Vertex)>
-    // where
-    //     T: Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle>;
 }
 
 struct UndirectedGraphIter<'a, Vertex, Edge> {
