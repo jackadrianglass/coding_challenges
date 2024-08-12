@@ -14,6 +14,7 @@ version = "0.1.0"
 dependencies = [
  "cxx",
  "cxx-build",
+ "microbench",
 ]
 
 [[package]]
@@ -78,6 +79,12 @@ checksum = "9d240c6f7e1ba3a28b0249f774e6a9dd0175054b52dfbb61b16eb8505c3785c9"
 dependencies = [
  "cc",
 ]
+
+[[package]]
+name = "microbench"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4c44e40aee4e6fd2f4257bb91e5948ce79285aeb949129448889cf2fbf6da0b"
 
 [[package]]
 name = "once_cell"
