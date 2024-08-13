@@ -25,14 +25,9 @@ std::array,…). Partial solutions are acceptable for discussion as well.
 
 ## Notepad
 
-How do I go about implementing this?
-1. Start with some minimal base cases that concat a single element tuple to another
-2. Figure out how to iterate over tuples without caring what the return type is
-3. Do some `decltype` magic to get the return type all squared away
-
 - [x] Main problem
 - [ ] Operate on tuple-like things
-- [ ] Operate on N-tuples
+- [x] Operate on N-tuples
 - [x] Figure out how to get the unit testing framework to print out the values
 
 # Q2
@@ -54,10 +49,4 @@ auto std::variant<int64_t, double> ret = map(
     std::variant<int, float>{2U}
 );
 ```
-
-## Notepad
-
-I need to get the resulting type of the visitor pattern mapped into the variant
-type. Since `std::visit` requires that all return types be the same, I can't use
-that.
 

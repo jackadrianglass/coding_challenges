@@ -1,8 +1,8 @@
+#include <cstdint>
 #include <ranges>
 #include <tuple>
 #include <utility>
 #include <variant>
-#include <cstdint>
 
 #include "tuple_output.h"
 
@@ -24,33 +24,49 @@ constexpr auto trim_till(std::tuple<T...> const &val) {
   return trim_till_<idx>(val, std::make_index_sequence<sizeof...(T) - idx>());
 }
 
-template <size_t idx, typename... T1, typename... T2, typename... T3>
-constexpr auto interweave_impl(std::tuple<T1...> const lhs,
-                               std::tuple<T2...> const rhs,
-                               std::size_t const max) {
-  if constexpr (idx >= std::tuple_size<decltype(lhs)>() ||
-                idx >= std::tuple_size<decltype(rhs)>()) {
-    return std::make_tuple();
+template <typename T>
+[[nodiscard]]
+consteval auto size_of(T const &val) -> std::size_t {
+  if constexpr (requires { val.size(); }) {
+    return std::size(val);
   } else {
-    return std::tuple_cat(
-        std::make_tuple(std::get<idx>(lhs), std::get<idx>(rhs)),
-        interweave_impl<idx + 1>(lhs, rhs, max));
+    return std::tuple_size<T>();
   }
 }
 
-template <typename... T1, typename... T2>
-constexpr auto interweave(std::tuple<T1...> lhs, std::tuple<T2...> rhs) {
-  auto const [smaller, bigger] = [=] {
-    if constexpr (std::tuple_size<decltype(lhs)>() <
-                  std::tuple_size<decltype(rhs)>()) {
-      return std::pair{lhs, rhs};
-    } else {
-      return std::pair{rhs, lhs};
-    }
-  }();
-  constexpr auto end = std::tuple_size<decltype(smaller)>();
-  return std::tuple_cat(interweave_impl<0>(lhs, rhs, end),
-                        trim_till<end>(bigger));
+template <std::size_t idx, typename... Xs>
+constexpr auto interweave_row(Xs &&...) {
+  return std::tuple{};
+}
+
+template <std::size_t idx, typename Head, typename... Xs>
+constexpr auto interweave_row(Head &&head, Xs &&...xs) {
+  if constexpr (idx < std::tuple_size_v<std::remove_reference_t<Head>>) {
+    return std::tuple_cat(std::make_tuple(std::get<idx>(head)),
+                          interweave_row<idx>(std::forward<Xs>(xs)...));
+  } else {
+    return interweave_row<idx>(std::forward<Xs>(xs)...);
+  }
+}
+template <std::size_t idx, typename... Xs>
+constexpr auto interweave_impl(Xs &&...) {
+  return std::tuple{};
+}
+
+template <std::size_t idx, typename Head, typename... Xs>
+constexpr auto interweave_impl(Head &&head, Xs &&...xs) {
+  if constexpr (idx < std::tuple_size_v<std::remove_reference_t<Head>>) {
+    return std::tuple_cat(
+        interweave_row<idx>(std::forward<Head>(head), std::forward<Xs>(xs)...),
+        interweave_impl<idx + 1>(std::forward<Head>(head),
+                                 std::forward<Xs>(xs)...));
+  } else {
+    return interweave_impl<idx>(std::forward<Xs>(xs)...);
+  }
+}
+
+template <typename... T> constexpr auto interweave(T &&...xs) {
+  return interweave_impl<0>(std::forward<T>(xs)...);
 }
 
 using namespace boost::ut;
@@ -104,6 +120,11 @@ auto const _2 = suite<"interweave tests">([] {
     auto const ret = std::tuple{0, 'a', 1, 'b', 2, 'c'};
     expect(that % interweave(a, b) == ret);
   };
+  "can interweave many tuples"_test = [] {
+    expect(that % interweave(std::make_tuple(1, 2, 3), std::make_tuple(4, 5),
+                             std::make_tuple(6, 7, 8)) ==
+           std::make_tuple(1, 4, 6, 2, 5, 7, 3, 8));
+  };
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +152,7 @@ auto const _3 = suite<"visitor map tests">([] {
                             std::variant<int32_t, float>{2});
     auto const expected = std::variant<int64_t, double>{4};
 
-	static_assert(std::is_same<decltype(result), decltype(expected)>());
+    static_assert(std::is_same<decltype(result), decltype(expected)>());
     expect(expected == result);
   };
 });
