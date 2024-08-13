@@ -125,6 +125,14 @@ auto const _2 = suite<"interweave tests">([] {
                              std::make_tuple(6, 7, 8)) ==
            std::make_tuple(1, 4, 6, 2, 5, 7, 3, 8));
   };
+  "can interweave arrays"_test = [] {
+    expect(that % interweave(std::array{1, 2, 3}, std::array{4, 5}) ==
+           std::make_tuple(1, 4, 2, 5, 3));
+  };
+  "can interweave pairs"_test = [] {
+    expect(that % interweave(std::pair{1, 2}, std::array{4, 5}) ==
+           std::make_tuple(1, 4, 2, 5));
+  };
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////

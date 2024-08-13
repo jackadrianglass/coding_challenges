@@ -26,7 +26,7 @@ std::array,…). Partial solutions are acceptable for discussion as well.
 ## Notepad
 
 - [x] Main problem
-- [ ] Operate on tuple-like things
+- [x] Operate on tuple-like things
 - [x] Operate on N-tuples
 - [x] Figure out how to get the unit testing framework to print out the values
 
