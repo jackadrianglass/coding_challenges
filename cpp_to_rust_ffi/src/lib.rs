@@ -11,6 +11,7 @@ mod ffi {
 
         fn fibonacci_iterative(&self, val: i32) -> i32;
         fn fibonacci_binets(&self, val: i32) -> i32;
+        fn golden_ratio(&self, val: i32) -> f64;
         fn lucas_iterative(&self, val: i32) -> i32;
         fn lucas_binets(&self, val: i32) -> i32;
         fn factorial_naive(&self, val: i32) -> i32;
@@ -21,18 +22,23 @@ mod ffi {
 pub fn benchmark() {
     let calculator = ffi::new_calculator();
     let options = microbench::Options::default();
-    for val in [10, 100, 1000, 10000] {
-        microbench::bench(&options, &format!("fibonacci_iterative{}", val), || { calculator.fibonacci_iterative(val) });
-        microbench::bench(&options, &format!("fibonacci_binets{}", val), || { calculator.fibonacci_binets(val) });
-    }
-    for val in [10, 100, 1000, 10000] {
-        microbench::bench(&options, &format!("lucas_iterative{}", val), || { calculator.lucas_iterative(val) });
-        microbench::bench(&options, &format!("lucas_binets{}", val), || { calculator.lucas_binets(val) });
-    }
-    for val in [10, 100, 1000, 10000] {
-        microbench::bench(&options, &format!("factorial_naive{}", val), || { calculator.factorial_naive(val) });
-        microbench::bench(&options, &format!("factorial_memoized{}", val), || { calculator.factorial_memoized(val) });
-    }
+    println!("Golden ratio is {}", calculator.golden_ratio(20));
+    microbench::bench(&options, "fibonacci_iterative", || {
+        calculator.fibonacci_iterative(10)
+    });
+    microbench::bench(&options, "fibonacci_binets", || {
+        calculator.fibonacci_binets(10)
+    });
+    microbench::bench(&options, "lucas_iterative", || {
+        calculator.lucas_iterative(10)
+    });
+    microbench::bench(&options, "lucas_binets", || calculator.lucas_binets(10));
+    microbench::bench(&options, "factorial_naive", || {
+        calculator.factorial_naive(10)
+    });
+    microbench::bench(&options, "factorial_memoized", || {
+        calculator.factorial_memoized(10)
+    });
 }
 
 #[cfg(test)]

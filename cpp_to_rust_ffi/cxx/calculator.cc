@@ -51,6 +51,12 @@ auto Calculator::lucas_binets(int depth) const -> int {
   auto const b = std::pow((1 - std::sqrt(5)) / 2.0, depth);
   return static_cast<int>(a + b);
 }
+
+auto Calculator::golden_ratio(int value) const -> double {
+  return static_cast<double>(fibonacci_binets(value + 1)) /
+         static_cast<double>(fibonacci_binets(value));
+}
+
 auto Calculator::factorial_naive(int depth) const -> int {
   if (depth == 0) {
     return 1;

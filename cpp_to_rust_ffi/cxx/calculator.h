@@ -11,6 +11,7 @@ public:
   [[nodiscard]] auto lucas_binets(int value) const -> int;
   [[nodiscard]] auto factorial_naive(int value) const -> int;
   [[nodiscard]] auto factorial_memoized(int value) const -> int;
+  [[nodiscard]] auto golden_ratio(int value) const -> double;
 
 private:
   mutable std::vector<int> precomputed_factorials;

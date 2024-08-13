@@ -18,30 +18,11 @@ Steps:
 
 Output when run on a Macbook Air M2
 ```
-fibonacci_iterative10 (5.0s) ...          125.113 ns/iter (1.000 R²)
-fibonacci_binets10 (5.0s) ...             61.903 ns/iter (1.000 R²)
-fibonacci_iterative100 (5.0s) ...         803.885 ns/iter (1.000 R²)
-fibonacci_binets100 (5.0s) ...            61.936 ns/iter (1.000 R²)
-fibonacci_iterative1000 (5.0s) ...        7_437.277 ns/iter (1.000 R²)
-fibonacci_binets1000 (5.0s) ...           59.601 ns/iter (1.000 R²)
-fibonacci_iterative10000 (5.0s) ...       73_576.575 ns/iter (1.000 R²)
-fibonacci_binets10000 (5.0s) ...          40.186 ns/iter (1.000 R²)
-
-lucas_iterative10 (5.0s) ...              124.157 ns/iter (1.000 R²)
-lucas_binets10 (5.0s) ...                 59.926 ns/iter (1.000 R²)
-lucas_iterative100 (5.0s) ...             802.590 ns/iter (1.000 R²)
-lucas_binets100 (5.0s) ...                59.922 ns/iter (1.000 R²)
-lucas_iterative1000 (5.0s) ...            7_429.068 ns/iter (1.000 R²)
-lucas_binets1000 (5.0s) ...               60.413 ns/iter (1.000 R²)
-lucas_iterative10000 (5.0s) ...           73_636.230 ns/iter (1.000 R²)
-lucas_binets10000 (5.0s) ...              40.119 ns/iter (1.000 R²)
-
-factorial_naive10 (5.0s) ...              50.143 ns/iter (1.000 R²)
-factorial_memoized10 (5.0s) ...           17.167 ns/iter (1.000 R²)
-factorial_naive100 (5.0s) ...             298.151 ns/iter (1.000 R²)
-factorial_memoized100 (5.0s) ...          17.174 ns/iter (1.000 R²)
-factorial_naive1000 (5.0s) ...            2_703.372 ns/iter (1.000 R²)
-factorial_memoized1000 (5.0s) ...         17.188 ns/iter (1.000 R²)
-factorial_naive10000 (5.0s) ...           26_662.082 ns/iter (1.000 R²)
-factorial_memoized10000 (5.0s) ...        17.171 ns/iter (1.000 R²)
+Golden ratio is 1.6180339985218033
+fibonacci_iterative (5.0s) ...           122.573 ns/iter (1.000 R²)
+fibonacci_binets (5.0s) ...               60.717 ns/iter (1.000 R²)
+lucas_iterative (5.0s) ...               121.415 ns/iter (1.000 R²)
+lucas_binets (5.0s) ...                   59.025 ns/iter (1.000 R²)
+factorial_naive (5.0s) ...                50.332 ns/iter (1.000 R²)
+factorial_memoized (5.0s) ...             18.142 ns/iter (1.000 R²)
 ```
