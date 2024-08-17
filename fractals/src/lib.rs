@@ -1,4 +1,6 @@
+use crate::vertex::Vertex;
 use bytemuck;
+use nalgebra as na;
 use nalgebra::vector;
 use wgpu::util::DeviceExt;
 use winit::window::Window;
@@ -7,11 +9,8 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use crate::vertex::Vertex;
 
-mod dragon_curve;
 mod vertex;
-
 
 struct State {
     surface: wgpu::Surface,
@@ -23,7 +22,6 @@ struct State {
 
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
-    num_vertices: u32,
 }
 
 impl State {
@@ -113,7 +111,7 @@ impl State {
             }),
             primitive: wgpu::PrimitiveState {
                 // todo: need to replace to a triangle topology
-                topology: wgpu::PrimitiveTopology::LineStrip,
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
@@ -129,12 +127,34 @@ impl State {
             },
             multiview: None,
         });
-        
-        // todo: Need to replace the 2D algorithms with a 3D fractal algorithm
-        let vertices = dragon_curve::dragon_curve(vector![0.0, -0.5, 1.0].into(), vector![0.0, 0.5, 1.0].into(), 10);
-        let vertices: Vec<_> = vertices.iter().map(|p| Vertex { position: *p, color: vector![1.0, 0.0, 1.0].into()}).collect();
 
-        let num_vertices = vertices.len() as u32;
+        // todo: Need to replace the 2D algorithms with a 3D fractal algorithm
+        let vertices = vec![
+            Vertex {
+                position: na::Point3::new(-1.0, -1.0, 0.0),
+                color: vector![1.0, 0.0, 1.0].into(),
+            },
+            Vertex {
+                position: na::Point3::new(1.0, -1.0, 0.0),
+                color: vector![1.0, 0.0, 1.0].into(),
+            },
+            Vertex {
+                position: na::Point3::new(-1.0, 1.0, 0.0),
+                color: vector![1.0, 0.0, 1.0].into(),
+            },
+            Vertex {
+                position: na::Point3::new(-1.0, 1.0, 0.0),
+                color: vector![1.0, 0.0, 1.0].into(),
+            },
+            Vertex {
+                position: na::Point3::new(1.0, -1.0, 0.0),
+                color: vector![1.0, 0.0, 1.0].into(),
+            },
+            Vertex {
+                position: na::Point3::new(1.0, 1.0, 0.0),
+                color: vector![1.0, 0.0, 1.0].into(),
+            },
+        ];
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -150,7 +170,6 @@ impl State {
             size,
             render_pipeline,
             vertex_buffer,
-            num_vertices,
         }
     }
 
@@ -205,11 +224,8 @@ impl State {
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(
-                0,
-                self.vertex_buffer.slice(..),
-            );
-            render_pass.draw(0..self.num_vertices, 0..1);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.draw(0..6, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -222,7 +238,10 @@ impl State {
 pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_inner_size(winit::dpi::PhysicalSize::new(1200, 1200))
+        .build(&event_loop)
+        .unwrap();
 
     let mut state = State::new(window).await;
 
