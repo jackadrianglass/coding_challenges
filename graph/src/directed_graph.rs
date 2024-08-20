@@ -8,15 +8,10 @@ struct DirectedGraph<Vertex, Edge> {
     vertex_counter: VertexHandle,
 }
 
-impl<'a, Vertex: 'a, Edge: 'a> Graph<'a, Vertex, Edge> for DirectedGraph<Vertex, Edge> {
-    fn new() -> Self {
-        Self {
-            vertices: HashMap::new(),
-            edges: HashMap::new(),
-            vertex_counter: 0,
-        }
-    }
-
+impl<'a, Vertex: 'a, Edge: 'a> Graph<'a, Vertex, Edge> for DirectedGraph<Vertex, Edge>
+where
+    Vertex: Clone,
+{
     fn num_vertices(&self) -> usize {
         self.vertices.len()
     }
@@ -82,12 +77,7 @@ impl<'a, Vertex: 'a, Edge: 'a> Graph<'a, Vertex, Edge> for DirectedGraph<Vertex,
     }
 
     // the edge handle returned is in the format of from -> to
-    fn add_edge(
-        &mut self,
-        from: VertexHandle,
-        to: VertexHandle,
-        data: Edge,
-    ) -> Option<EdgeHandle> {
+    fn add_edge(&mut self, from: VertexHandle, to: VertexHandle, data: Edge) -> Option<EdgeHandle> {
         if !(self.vertices.contains_key(&from) && self.vertices.contains_key(&to)) {
             return None;
         }
@@ -109,17 +99,26 @@ impl<'a, Vertex: 'a, Edge: 'a> Graph<'a, Vertex, Edge> for DirectedGraph<Vertex,
             None => {}
         }
     }
+
+    fn connections(&self, handle: VertexHandle) -> Vec<(&EdgeHandle, &Edge)> {
+        self.edges
+            .iter()
+            .filter(|&((a, b), _)| *a == handle || *b == handle)
+            .collect()
+    }
+
 }
 
 impl<Vertex, Edge> DirectedGraph<Vertex, Edge>
 where
     Vertex: Clone,
 {
-    fn connections(&self, handle: VertexHandle) -> Vec<(&EdgeHandle, &Edge)> {
-        self.edges
-            .iter()
-            .filter(|&((a, b), _)| *a == handle || *b == handle)
-            .collect()
+    fn new() -> Self {
+        Self {
+            vertices: HashMap::new(),
+            edges: HashMap::new(),
+            vertex_counter: 0,
+        }
     }
 
     fn in_edges(&self, handle: VertexHandle) -> Vec<(&EdgeHandle, &Edge)> {
@@ -141,67 +140,7 @@ where
         start: VertexHandle,
         edge_callback: Box<dyn Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle>>,
     ) -> impl Iterator<Item = (VertexHandle, Vertex)> + 'b {
-        DirectedGraphIter::new(&self, start, edge_callback)
-    }
-}
-
-struct DirectedGraphIter<'a, Vertex, Edge> {
-    graph: &'a DirectedGraph<Vertex, Edge>,
-    start: VertexHandle,
-    edge_callback: Box<dyn Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle> + 'a>,
-
-    current: Option<VertexHandle>,
-}
-
-impl<'a, Vertex, Edge> DirectedGraphIter<'a, Vertex, Edge> {
-    fn new(
-        graph: &'a DirectedGraph<Vertex, Edge>,
-        start: VertexHandle,
-        edge_callback: Box<dyn Fn(&[(&EdgeHandle, &Edge)]) -> Option<EdgeHandle>>,
-    ) -> Self {
-        Self {
-            graph,
-            start,
-            edge_callback,
-            current: None,
-        }
-    }
-}
-
-impl<'a, Vertex, Edge> Iterator for DirectedGraphIter<'a, Vertex, Edge>
-where
-    Vertex: Clone,
-{
-    type Item = (VertexHandle, Vertex);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let Some(current) = self.current else {
-            self.current = Some(self.start);
-
-            if let Some(data) = self.graph.vertex(self.start) {
-                return Some((self.start.clone(), data.clone()));
-            } else {
-                return None;
-            };
-        };
-
-        if self.graph.vertex(current).is_none() {
-            return None;
-        }
-
-        let edges = self.graph.connections(current);
-        if edges.len() == 0 {
-            return None;
-        }
-        let Some(edge) = (self.edge_callback)(&edges) else {
-            return None;
-        };
-        self.current = Some(if edge.0 == current { edge.1 } else { edge.0 });
-        if let Some(data) = self.graph.vertex(self.current.unwrap()) {
-            Some((self.current.unwrap().clone(), data.clone()))
-        } else {
-            None
-        }
+        GraphIter::new(self, start, edge_callback)
     }
 }
 
@@ -403,30 +342,5 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(connections.contains(&handle_1.unwrap()));
         assert!(connections.contains(&handle_2.unwrap()));
-    }
-
-    #[test]
-    fn can_traverse_the_graph() {
-        let mut graph: DirectedGraph<i32, i32> = DirectedGraph::new();
-        let a = graph.add_vertex(1);
-        let (b, _) = graph.add_connected_vertex(2, a, 11).unwrap();
-        let (c, _) = graph.add_connected_vertex(3, b, 12).unwrap();
-        let (d, _) = graph.add_connected_vertex(4, c, 13).unwrap();
-        let (e, _) = graph.add_connected_vertex(5, d, 14).unwrap();
-        let (f, _) = graph.add_connected_vertex(6, e, 15).unwrap();
-
-        for ((lhs, _), rhs) in graph
-            .traverse(
-                a,
-                Box::new(|edges: &[(&EdgeHandle, &i32)]| {
-                    let mut sorted = edges.iter().map(|(handle, _)| handle).collect::<Vec<_>>();
-                    sorted.sort();
-                    Some(***sorted.iter().rev().next().unwrap())
-                }),
-            )
-            .zip([a, b, c, d, e, f].iter())
-        {
-            assert_eq!(lhs, *rhs);
-        }
     }
 }
